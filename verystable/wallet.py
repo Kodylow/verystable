@@ -26,7 +26,7 @@ class Outpoint:
         return hash(str(self))
 
     def __eq__(self, o) -> bool:
-        return self.__dict__ == getattr(o, '__dict__', {})
+        return self.__dict__ == getattr(o, "__dict__", {})
 
 
 def btc_to_sats(btc) -> int:
@@ -67,6 +67,7 @@ class Utxo:
     def __hash__(self) -> int:
         return hash(str(self.outpoint))
 
+
 @dataclass
 class Spend:
     spent_utxo: Utxo
@@ -76,11 +77,13 @@ class Spend:
     def __repr__(self) -> str:
         return (
             f"Spend(amt={self.spent_utxo.value_sats} "
-            f"from_addr={self.spent_utxo.address}, height={self.height})")
+            f"from_addr={self.spent_utxo.address}, height={self.height})"
+        )
 
 
 def get_confs_for_txid(
-        rpc: BitcoinRPC, target_txid: str, min_height: int = 0) -> int | None:
+    rpc: BitcoinRPC, target_txid: str, min_height: int = 0
+) -> int | None:
     """Return the number of confirmations for a transaction."""
     height = rpc.getblockcount()
     found_height = None
@@ -160,8 +163,9 @@ def get_addr_history(
         for tx in block["tx"]:
             # Detect new utxos
             for vout in tx["vout"]:
-                if (addr := vout.get("scriptPubKey",
-                                     {}).get("address")) and (addr in addr_watchlist):
+                if (addr := vout.get("scriptPubKey", {}).get("address")) and (
+                    addr in addr_watchlist
+                ):
                     op = Outpoint(tx["txid"], vout["n"])
                     utxo = Utxo(op, addr, btc_to_sats(vout["value"]), height)
                     outpoint_to_utxo[op] = utxo
@@ -229,13 +233,15 @@ class SingleAddressWallet:
                     op,
                     self.fee_addr,
                     btc_to_sats(unspent["amount"]),
-                    height=unspent['height'],
-                ))
+                    height=unspent["height"],
+                )
+            )
 
     def sign_msg(self, msg: bytes) -> bytes:
         """Sign a message with the fee wallet's private key."""
         return core.key.sign_schnorr(
-            core.key.tweak_add_privkey(self.privkey, self.tr_info.tweak), msg)
+            core.key.tweak_add_privkey(self.privkey, self.tr_info.tweak), msg
+        )
 
     def get_utxo(self) -> Utxo:
         """Return a UTXO that is mature and not currently locked."""
@@ -245,13 +251,15 @@ class SingleAddressWallet:
         if not utxos:
             raise RuntimeError(
                 "Fee wallet empty! Add coins with "
-                f"`bitcoin-cli -regtest generatetoaddress 20 {self.fee_addr}`")
+                f"`bitcoin-cli -regtest generatetoaddress 20 {self.fee_addr}`"
+            )
 
         height = self.rpc.getblockcount()
         utxos.sort(key=lambda u: u.height)
-        if (height - self.utxos[0].height) < 100:
+        if (height - self.utxos[0].height) < 1:
             raise RuntimeError(
-                "No mature coins available; call `-generate` a few times. ")
+                "No mature coins available; call `-generate` a few times. "
+            )
 
         utxo = utxos.pop(0)
         self.locked_utxos.add(utxo.outpoint)
